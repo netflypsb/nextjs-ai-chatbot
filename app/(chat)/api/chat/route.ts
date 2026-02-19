@@ -13,8 +13,10 @@ import { buildCheckpointMessages } from "@/lib/ai/context-manager";
 import { entitlementsByUserType } from "@/lib/ai/entitlements";
 import { type RequestHints, systemPrompt } from "@/lib/ai/prompts";
 import { getLanguageModel } from "@/lib/ai/providers";
+import { browseWeb } from "@/lib/ai/tools/browse-web";
 import { createDocument } from "@/lib/ai/tools/create-document";
 import { createPlan } from "@/lib/ai/tools/create-plan";
+import { executeCode } from "@/lib/ai/tools/execute-code";
 import { getWeather } from "@/lib/ai/tools/get-weather";
 import { listDocuments } from "@/lib/ai/tools/list-documents";
 import { readDocument } from "@/lib/ai/tools/read-document";
@@ -23,6 +25,7 @@ import { requestSuggestions } from "@/lib/ai/tools/request-suggestions";
 import { searchDocuments } from "@/lib/ai/tools/search-documents";
 import { updateDocument } from "@/lib/ai/tools/update-document";
 import { updatePlan } from "@/lib/ai/tools/update-plan";
+import { webSearch } from "@/lib/ai/tools/web-search";
 import { auth, type UserType } from "@/lib/auth";
 import { isProductionEnvironment } from "@/lib/constants";
 import {
@@ -164,6 +167,9 @@ export async function POST(request: Request) {
                 "createPlan",
                 "updatePlan",
                 "readPlan",
+                "browseWeb",
+                "webSearch",
+                "executeCode",
               ],
           providerOptions: isReasoningModel
             ? {
@@ -183,6 +189,9 @@ export async function POST(request: Request) {
             createPlan: createPlan({ session, dataStream }),
             updatePlan: updatePlan({ session, dataStream }),
             readPlan: readPlan({ session }),
+            browseWeb,
+            webSearch,
+            executeCode,
           },
           prepareStep: ({ messages: stepMessages }) => {
             const checkpoint = buildCheckpointMessages(stepMessages);

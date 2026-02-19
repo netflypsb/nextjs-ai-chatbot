@@ -1,12 +1,15 @@
-import { gateway } from "@ai-sdk/gateway";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import {
   customProvider,
   extractReasoningMiddleware,
   wrapLanguageModel,
 } from "ai";
 import { isTestEnvironment } from "../constants";
+import { DEFAULT_CHAT_MODEL } from "./models";
 
-const THINKING_SUFFIX_REGEX = /-thinking$/;
+const openrouter = createOpenRouter({
+  apiKey: process.env.OPENROUTER_API_KEY,
+});
 
 export const myProvider = isTestEnvironment
   ? (() => {
@@ -33,30 +36,28 @@ export function getLanguageModel(modelId: string) {
   }
 
   const isReasoningModel =
-    modelId.includes("reasoning") || modelId.endsWith("-thinking");
+    modelId.includes("reasoning") || modelId.includes("thinking");
 
   if (isReasoningModel) {
-    const gatewayModelId = modelId.replace(THINKING_SUFFIX_REGEX, "");
-
     return wrapLanguageModel({
-      model: gateway.languageModel(gatewayModelId),
+      model: openrouter(modelId),
       middleware: extractReasoningMiddleware({ tagName: "thinking" }),
     });
   }
 
-  return gateway.languageModel(modelId);
+  return openrouter(modelId);
 }
 
 export function getTitleModel() {
   if (isTestEnvironment && myProvider) {
     return myProvider.languageModel("title-model");
   }
-  return gateway.languageModel("google/gemini-2.5-flash-lite");
+  return openrouter(DEFAULT_CHAT_MODEL);
 }
 
 export function getArtifactModel() {
   if (isTestEnvironment && myProvider) {
     return myProvider.languageModel("artifact-model");
   }
-  return gateway.languageModel("anthropic/claude-haiku-4.5");
+  return openrouter(DEFAULT_CHAT_MODEL);
 }
