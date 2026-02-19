@@ -66,8 +66,41 @@ export function extractTextFromMessage(message: any): string {
 }
 
 /**
+ * Extract a summary of tool calls from messages that will be trimmed.
+ * This helps the agent understand what was already accomplished.
+ */
+function summarizeToolCalls(messages: any[]): string {
+  const toolSummaries: string[] = [];
+
+  for (const msg of messages) {
+    if (!Array.isArray(msg.content)) {
+      continue;
+    }
+
+    for (const part of msg.content) {
+      if (part.type === "tool-call" && part.toolName) {
+        const args = part.args ? JSON.stringify(part.args).slice(0, 100) : "";
+        toolSummaries.push(`- ${part.toolName}(${args})`);
+      }
+      if (part.type === "tool-result" && part.toolName) {
+        const resultPreview = part.result
+          ? JSON.stringify(part.result).slice(0, 80)
+          : "completed";
+        toolSummaries.push(`  → ${part.toolName} result: ${resultPreview}`);
+      }
+    }
+  }
+
+  if (toolSummaries.length === 0) {
+    return "";
+  }
+
+  return `\nTOOL CALLS COMPLETED (trimmed messages):\n${toolSummaries.slice(0, 20).join("\n")}`;
+}
+
+/**
  * Build a condensed checkpoint context when messages exceed token threshold.
- * Preserves the original user request and recent messages for continuity.
+ * Preserves the original user request, tool call summary, and recent messages.
  */
 export function buildCheckpointMessages(messages: any[]): any[] | null {
   const estimated = estimateTokenCount(messages);
@@ -81,8 +114,12 @@ export function buildCheckpointMessages(messages: any[]): any[] | null {
   const originalRequest = messages.find((m: any) => m.role === "user");
   const originalText = extractTextFromMessage(originalRequest);
 
-  // Keep last 8 messages for recent context
-  const recentMessages = messages.slice(-8);
+  // Keep last 10 messages for recent context (increased from 8)
+  const recentMessages = messages.slice(-10);
+
+  // Summarize tool calls from trimmed messages
+  const trimmedMessages = messages.slice(0, -10);
+  const toolSummary = summarizeToolCalls(trimmedMessages);
 
   const checkpointMessage = {
     role: "user" as const,
@@ -90,12 +127,17 @@ export function buildCheckpointMessages(messages: any[]): any[] | null {
 
 ORIGINAL REQUEST:
 ${originalText}
+${toolSummary}
 
 INSTRUCTIONS:
-1. Use readPlan to check the current plan state
-2. Use listDocuments to see what documents have been created
-3. Continue executing the plan from where you left off
-4. Always update the plan after completing each step
+1. Use readPlan to check the current plan state and see which steps are done
+2. Use listDocuments to see what documents/artifacts have been created
+3. Use readDocument to inspect any artifact content if needed for context
+4. Continue executing the plan from where you left off
+5. Always update the plan after completing each step
+6. Before marking the task complete, perform a QUALITY CHECK on final deliverables
+
+IMPORTANT: Do NOT restart completed steps. Resume from where you left off.
 
 Recent context follows below.`,
   };

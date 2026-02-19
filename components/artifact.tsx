@@ -268,28 +268,37 @@ function PureArtifact({
     }
   }, [artifact.documentId, artifactDefinition, setMetadata]);
 
+  const sidebarOffset = isSidebarOpen && !isMobile ? 256 : 0;
+  const availableWidth = (windowWidth ?? 0) - sidebarOffset;
+  const chatPanelWidth = Math.min(400, Math.max(300, availableWidth * 0.35));
+
   return (
     <AnimatePresence>
       {artifact.isVisible && (
         <motion.div
           animate={{ opacity: 1 }}
-          className="fixed top-0 left-0 z-50 flex h-dvh w-dvw flex-row bg-transparent"
+          className="fixed top-0 z-50 flex h-dvh flex-row bg-transparent"
           data-testid="artifact"
           exit={{ opacity: 0, transition: { delay: 0.4 } }}
           initial={{ opacity: 1 }}
+          style={{
+            left: sidebarOffset,
+            width: availableWidth,
+          }}
         >
           {!isMobile && (
             <motion.div
-              animate={{ width: windowWidth, right: 0 }}
+              animate={{ width: availableWidth, right: 0 }}
               className="fixed h-dvh bg-background"
               exit={{
-                width: isSidebarOpen ? windowWidth - 256 : windowWidth,
+                width: availableWidth,
                 right: 0,
               }}
               initial={{
-                width: isSidebarOpen ? windowWidth - 256 : windowWidth,
+                width: availableWidth,
                 right: 0,
               }}
+              style={{ left: sidebarOffset }}
             />
           )}
 
@@ -306,7 +315,7 @@ function PureArtifact({
                   damping: 30,
                 },
               }}
-              className="relative h-dvh w-[400px] shrink-0 bg-muted dark:bg-background"
+              className="relative h-dvh shrink-0 bg-muted dark:bg-background"
               exit={{
                 opacity: 0,
                 x: 0,
@@ -314,12 +323,13 @@ function PureArtifact({
                 transition: { duration: 0 },
               }}
               initial={{ opacity: 0, x: 10, scale: 1 }}
+              style={{ width: chatPanelWidth }}
             >
               <AnimatePresence>
                 {!isCurrentVersion && (
                   <motion.div
                     animate={{ opacity: 1 }}
-                    className="absolute top-0 left-0 z-50 h-dvh w-[400px] bg-zinc-900/50"
+                    className="absolute top-0 left-0 z-50 h-dvh w-full bg-zinc-900/50"
                     exit={{ opacity: 0 }}
                     initial={{ opacity: 0 }}
                   />
@@ -380,11 +390,11 @@ function PureArtifact({
                   }
                 : {
                     opacity: 1,
-                    x: 400,
+                    x: chatPanelWidth,
                     y: 0,
                     height: windowHeight,
-                    width: windowWidth
-                      ? windowWidth - 400
+                    width: availableWidth
+                      ? availableWidth - chatPanelWidth
                       : "calc(100dvw-400px)",
                     borderRadius: 0,
                     transition: {

@@ -149,6 +149,25 @@ export function Chat({
             description: error.message,
           });
         }
+      } else if (error instanceof Error) {
+        const msg = error.message || "An unexpected error occurred";
+        if (msg.includes("timeout") || msg.includes("TIMEOUT")) {
+          toast({
+            type: "error",
+            description:
+              "The request timed out. The agent task may be too complex for a single request. Please try again.",
+          });
+        } else {
+          toast({
+            type: "error",
+            description: msg.length > 200 ? `${msg.slice(0, 200)}...` : msg,
+          });
+        }
+      } else {
+        toast({
+          type: "error",
+          description: "An unexpected error occurred. Please try again.",
+        });
       }
     },
   });
@@ -191,6 +210,7 @@ export function Chat({
         <ChatHeader
           chatId={id}
           isReadonly={isReadonly}
+          messages={messages}
           selectedVisibilityType={initialVisibilityType}
         />
 

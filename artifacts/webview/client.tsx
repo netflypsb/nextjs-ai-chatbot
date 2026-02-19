@@ -103,7 +103,7 @@ export const webviewArtifact = new Artifact<"webview", WebviewMetadata>({
         )}
         <iframe
           className="h-full w-full border-0 bg-white"
-          sandbox="allow-scripts allow-modals allow-popups"
+          sandbox="allow-scripts allow-modals allow-popups allow-same-origin"
           srcDoc={content}
           title="Webview Preview"
         />

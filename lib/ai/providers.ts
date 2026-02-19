@@ -9,6 +9,10 @@ import { DEFAULT_CHAT_MODEL } from "./models";
 
 const openrouter = createOpenRouter({
   apiKey: process.env.OPENROUTER_API_KEY,
+  headers: {
+    "HTTP-Referer": "https://solaris-app.com",
+    "X-Title": "Solaris-Web",
+  },
 });
 
 export const myProvider = isTestEnvironment

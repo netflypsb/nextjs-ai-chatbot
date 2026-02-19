@@ -57,54 +57,95 @@ export function exportAsHtml(content: string, filename: string) {
 }
 
 /**
- * Export HTML content as a PNG image using html-to-image
+ * Render HTML content in a hidden iframe and capture it via canvas.
+ * This avoids cross-origin CSS SecurityErrors that html-to-image encounters.
+ */
+function renderHtmlInIframe(
+  htmlContent: string,
+  width: number
+): Promise<HTMLCanvasElement> {
+  return new Promise((resolve, reject) => {
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "absolute";
+    iframe.style.left = "-9999px";
+    iframe.style.width = `${width}px`;
+    iframe.style.height = "2000px";
+    iframe.style.border = "none";
+    iframe.sandbox.add("allow-same-origin");
+    document.body.appendChild(iframe);
+
+    iframe.onload = async () => {
+      try {
+        // Wait for content to render
+        await new Promise((r) => setTimeout(r, 1500));
+
+        const { toCanvas } = await import("html-to-image");
+        const body = iframe.contentDocument?.body;
+        if (!body) {
+          throw new Error("Could not access iframe body");
+        }
+
+        const canvas = await toCanvas(body, {
+          width,
+          backgroundColor: "#ffffff",
+          skipFonts: true,
+          filter: (node: HTMLElement) => {
+            // Skip link elements that reference external stylesheets
+            if (
+              node.tagName === "LINK" &&
+              node.getAttribute("rel") === "stylesheet"
+            ) {
+              return false;
+            }
+            return true;
+          },
+        });
+        resolve(canvas);
+      } catch (err) {
+        reject(err);
+      } finally {
+        document.body.removeChild(iframe);
+      }
+    };
+
+    iframe.onerror = () => {
+      document.body.removeChild(iframe);
+      reject(new Error("Failed to load iframe"));
+    };
+
+    iframe.srcdoc = htmlContent;
+  });
+}
+
+/**
+ * Export HTML content as a PNG image.
+ * Uses an iframe + html-to-image with skipFonts to avoid cross-origin CSS errors.
  */
 export async function exportAsPng(htmlContent: string, filename: string) {
-  const { toBlob } = await import("html-to-image");
-
-  // Create a temporary container to render the HTML
-  const container = document.createElement("div");
-  container.style.position = "absolute";
-  container.style.left = "-9999px";
-  container.style.width = "1200px";
-  container.innerHTML = htmlContent;
-  document.body.appendChild(container);
-
   try {
-    const blob = await toBlob(container, {
-      width: 1200,
-      backgroundColor: "#ffffff",
-    });
+    const canvas = await renderHtmlInIframe(htmlContent, 1200);
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/png")
+    );
     if (blob) {
       triggerDownload(
         blob,
         filename.endsWith(".png") ? filename : `${filename}.png`
       );
     }
-  } finally {
-    document.body.removeChild(container);
+  } catch {
+    // Fallback: just download the HTML file instead
+    exportAsHtml(htmlContent, filename);
   }
 }
 
 /**
- * Export HTML content as PDF using jsPDF + html-to-image
+ * Export HTML content as PDF using jsPDF + iframe rendering.
  */
 export async function exportAsPdf(htmlContent: string, filename: string) {
-  const { toCanvas } = await import("html-to-image");
-  const { default: jsPDF } = await import("jspdf");
-
-  const container = document.createElement("div");
-  container.style.position = "absolute";
-  container.style.left = "-9999px";
-  container.style.width = "800px";
-  container.innerHTML = htmlContent;
-  document.body.appendChild(container);
-
   try {
-    const canvas = await toCanvas(container, {
-      width: 800,
-      backgroundColor: "#ffffff",
-    });
+    const { default: jsPDF } = await import("jspdf");
+    const canvas = await renderHtmlInIframe(htmlContent, 800);
 
     const imgData = canvas.toDataURL("image/png");
     const pdf = new jsPDF("p", "mm", "a4");
@@ -113,8 +154,9 @@ export async function exportAsPdf(htmlContent: string, filename: string) {
 
     pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
     pdf.save(filename.endsWith(".pdf") ? filename : `${filename}.pdf`);
-  } finally {
-    document.body.removeChild(container);
+  } catch {
+    // Fallback: just download the HTML file instead
+    exportAsHtml(htmlContent, filename);
   }
 }
 

@@ -5,18 +5,21 @@ import { memo } from "react";
 import { useWindowSize } from "usehooks-ts";
 import { SidebarToggle } from "@/components/sidebar-toggle";
 import { Button } from "@/components/ui/button";
+import type { ChatMessage } from "@/lib/types";
+import { ArtifactSelector } from "./artifact-selector";
 import { PlusIcon } from "./icons";
 import { useSidebar } from "./ui/sidebar";
-import { VisibilitySelector, type VisibilityType } from "./visibility-selector";
+import type { VisibilityType } from "./visibility-selector";
 
 function PureChatHeader({
   chatId,
-  selectedVisibilityType,
   isReadonly,
+  messages,
 }: {
   chatId: string;
   selectedVisibilityType: VisibilityType;
   isReadonly: boolean;
+  messages: ChatMessage[];
 }) {
   const router = useRouter();
   const { open } = useSidebar();
@@ -42,10 +45,10 @@ function PureChatHeader({
       )}
 
       {!isReadonly && (
-        <VisibilitySelector
+        <ArtifactSelector
           chatId={chatId}
           className="order-1 md:order-2"
-          selectedVisibilityType={selectedVisibilityType}
+          messages={messages}
         />
       )}
 
@@ -60,6 +63,7 @@ export const ChatHeader = memo(PureChatHeader, (prevProps, nextProps) => {
   return (
     prevProps.chatId === nextProps.chatId &&
     prevProps.selectedVisibilityType === nextProps.selectedVisibilityType &&
-    prevProps.isReadonly === nextProps.isReadonly
+    prevProps.isReadonly === nextProps.isReadonly &&
+    prevProps.messages.length === nextProps.messages.length
   );
 });

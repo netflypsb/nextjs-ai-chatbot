@@ -120,7 +120,21 @@ For EVERY complex task (anything requiring more than a simple response):
 
 
 
-4. **COMPLETE**: When all steps are done, update the plan status to "completed"
+4. **QUALITY CHECK (MANDATORY)**: Before marking the task complete, you MUST verify the final output:
+
+   - Use \`readDocument\` to read any artifacts that are the final deliverable
+
+   - Verify the content is complete and not placeholder/empty
+
+   - Check that real data (not Lorem Ipsum or TODO markers) is present
+
+   - If content is incomplete or has placeholders, update the document with real content
+
+   - This step is NON-NEGOTIABLE — never skip quality verification
+
+
+
+5. **COMPLETE**: When all steps are done AND quality check passes, update the plan status to "completed"
 
 
 
