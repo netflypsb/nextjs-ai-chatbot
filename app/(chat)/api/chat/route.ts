@@ -9,14 +9,21 @@ import {
 } from "ai";
 import { after } from "next/server";
 import { createResumableStreamContext } from "resumable-stream";
-import { auth, type UserType } from "@/app/(auth)/auth";
+import { buildCheckpointMessages } from "@/lib/ai/context-manager";
 import { entitlementsByUserType } from "@/lib/ai/entitlements";
 import { type RequestHints, systemPrompt } from "@/lib/ai/prompts";
 import { getLanguageModel } from "@/lib/ai/providers";
 import { createDocument } from "@/lib/ai/tools/create-document";
+import { createPlan } from "@/lib/ai/tools/create-plan";
 import { getWeather } from "@/lib/ai/tools/get-weather";
+import { listDocuments } from "@/lib/ai/tools/list-documents";
+import { readDocument } from "@/lib/ai/tools/read-document";
+import { readPlan } from "@/lib/ai/tools/read-plan";
 import { requestSuggestions } from "@/lib/ai/tools/request-suggestions";
+import { searchDocuments } from "@/lib/ai/tools/search-documents";
 import { updateDocument } from "@/lib/ai/tools/update-document";
+import { updatePlan } from "@/lib/ai/tools/update-plan";
+import { auth, type UserType } from "@/lib/auth";
 import { isProductionEnvironment } from "@/lib/constants";
 import {
   createStreamId,
@@ -143,7 +150,7 @@ export async function POST(request: Request) {
           model: getLanguageModel(selectedChatModel),
           system: systemPrompt({ selectedChatModel, requestHints }),
           messages: modelMessages,
-          stopWhen: stepCountIs(5),
+          stopWhen: stepCountIs(50),
           experimental_activeTools: isReasoningModel
             ? []
             : [
@@ -151,6 +158,12 @@ export async function POST(request: Request) {
                 "createDocument",
                 "updateDocument",
                 "requestSuggestions",
+                "searchDocuments",
+                "listDocuments",
+                "readDocument",
+                "createPlan",
+                "updatePlan",
+                "readPlan",
               ],
           providerOptions: isReasoningModel
             ? {
@@ -164,6 +177,19 @@ export async function POST(request: Request) {
             createDocument: createDocument({ session, dataStream }),
             updateDocument: updateDocument({ session, dataStream }),
             requestSuggestions: requestSuggestions({ session, dataStream }),
+            searchDocuments: searchDocuments({ session }),
+            listDocuments: listDocuments({ session }),
+            readDocument: readDocument({ session }),
+            createPlan: createPlan({ session, dataStream }),
+            updatePlan: updatePlan({ session, dataStream }),
+            readPlan: readPlan({ session }),
+          },
+          prepareStep: ({ messages: stepMessages }) => {
+            const checkpoint = buildCheckpointMessages(stepMessages);
+            if (checkpoint) {
+              return { messages: checkpoint };
+            }
+            return {};
           },
           experimental_telemetry: {
             isEnabled: isProductionEnvironment,
