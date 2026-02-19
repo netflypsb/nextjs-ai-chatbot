@@ -103,11 +103,26 @@ print('\\n'.join(output_files))
         }
       }
 
+      // Create download-friendly file info using API endpoint
+      const fileDownloads = files.map((file) => {
+        if (file.url.startsWith("data:")) {
+          // Extract just the base64 part
+          const base64Data = file.url.split(",")[1] || "";
+          return {
+            name: file.name,
+            mimeType: file.mimeType,
+            base64Data,
+            downloadUrl: "/api/download", // Use our download API
+          };
+        }
+        return file;
+      });
+
       return {
         stdout: stdout.slice(0, 10_000),
         stderr: stderr.slice(0, 5000),
         error: execution.error ? execution.error.value : null,
-        files,
+        files: fileDownloads,
         charts,
         success: !execution.error,
       };

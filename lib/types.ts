@@ -1,8 +1,10 @@
 import type { InferUITool, UIMessage } from "ai";
 import { z } from "zod";
 import type { ArtifactKind } from "@/components/artifact";
+import type { browseWeb } from "./ai/tools/browse-web";
 import type { createDocument } from "./ai/tools/create-document";
 import type { createPlan } from "./ai/tools/create-plan";
+import type { executeCode } from "./ai/tools/execute-code";
 import type { getWeather } from "./ai/tools/get-weather";
 import type { listDocuments } from "./ai/tools/list-documents";
 import type { readDocument } from "./ai/tools/read-document";
@@ -11,6 +13,7 @@ import type { requestSuggestions } from "./ai/tools/request-suggestions";
 import type { searchDocuments } from "./ai/tools/search-documents";
 import type { updateDocument } from "./ai/tools/update-document";
 import type { updatePlan } from "./ai/tools/update-plan";
+import type { webSearch } from "./ai/tools/web-search";
 import type { Suggestion } from "./db/schema";
 
 export type DataPart = { type: "append-message"; message: string };
@@ -33,6 +36,9 @@ type readDocumentTool = InferUITool<ReturnType<typeof readDocument>>;
 type createPlanTool = InferUITool<ReturnType<typeof createPlan>>;
 type updatePlanTool = InferUITool<ReturnType<typeof updatePlan>>;
 type readPlanTool = InferUITool<ReturnType<typeof readPlan>>;
+type browseWebTool = InferUITool<typeof browseWeb>;
+type executeCodeTool = InferUITool<typeof executeCode>;
+type webSearchTool = InferUITool<typeof webSearch>;
 
 export type ChatTools = {
   getWeather: weatherTool;
@@ -45,6 +51,9 @@ export type ChatTools = {
   createPlan: createPlanTool;
   updatePlan: updatePlanTool;
   readPlan: readPlanTool;
+  browseWeb: browseWebTool;
+  executeCode: executeCodeTool;
+  webSearch: webSearchTool;
 };
 
 export type CustomUIDataTypes = {
