@@ -1,5 +1,6 @@
 import { toast } from "sonner";
 import { CodeEditor } from "@/components/code-editor";
+import { CodePreview } from "@/components/code-preview";
 import {
   Console,
   type ConsoleOutput,
@@ -8,6 +9,7 @@ import {
 import { Artifact } from "@/components/create-artifact";
 import {
   CopyIcon,
+  DownloadIcon,
   LogsIcon,
   MessageIcon,
   PlayIcon,
@@ -15,6 +17,24 @@ import {
   UndoIcon,
 } from "@/components/icons";
 import { generateUUID } from "@/lib/utils";
+
+function EyeIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      viewBox="0 0 24 24"
+      width={size}
+    >
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
 
 const OUTPUT_HANDLERS = {
   matplotlib: `
@@ -64,6 +84,7 @@ function detectRequiredHandlers(code: string): string[] {
 
 type Metadata = {
   outputs: ConsoleOutput[];
+  showPreview: boolean;
 };
 
 export const codeArtifact = new Artifact<"code", Metadata>({
@@ -73,6 +94,7 @@ export const codeArtifact = new Artifact<"code", Metadata>({
   initialize: ({ setMetadata }) => {
     setMetadata({
       outputs: [],
+      showPreview: false,
     });
   },
   onStreamPart: ({ streamPart, setArtifact }) => {
@@ -90,14 +112,22 @@ export const codeArtifact = new Artifact<"code", Metadata>({
       }));
     }
   },
-  content: ({ metadata, setMetadata, ...props }) => {
+  content: ({ metadata, setMetadata, content, ...props }) => {
+    const showPreview = metadata?.showPreview ?? false;
+
     return (
       <>
-        <div className="px-1">
-          <CodeEditor {...props} />
-        </div>
+        {showPreview ? (
+          <div className="h-[600px] w-full">
+            <CodePreview code={content} />
+          </div>
+        ) : (
+          <div className="px-1">
+            <CodeEditor content={content} {...props} />
+          </div>
+        )}
 
-        {metadata?.outputs && (
+        {metadata?.outputs && !showPreview && (
           <Console
             consoleOutputs={metadata.outputs}
             setConsoleOutputs={() => {
@@ -237,11 +267,37 @@ export const codeArtifact = new Artifact<"code", Metadata>({
       },
     },
     {
+      icon: <EyeIcon size={18} />,
+      label: "Preview",
+      description: "Toggle live preview (HTML/JS/React)",
+      onClick: ({ metadata, setMetadata }) => {
+        setMetadata({
+          ...metadata,
+          showPreview: !metadata.showPreview,
+        });
+      },
+    },
+    {
       icon: <CopyIcon size={18} />,
       description: "Copy code to clipboard",
       onClick: ({ content }) => {
         navigator.clipboard.writeText(content);
         toast.success("Copied to clipboard!");
+      },
+    },
+    {
+      icon: <DownloadIcon size={18} />,
+      description: "Download code file",
+      onClick: async ({ content }) => {
+        const { exportAsHtml, exportAsText } = await import(
+          "@/lib/export-utils"
+        );
+        if (content.includes("<!DOCTYPE html>") || content.includes("<html")) {
+          exportAsHtml(content, "code");
+        } else {
+          exportAsText(content, "code");
+        }
+        toast.success("Downloaded!");
       },
     },
   ],

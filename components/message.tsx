@@ -342,6 +342,64 @@ const PurePreviewMessage = ({
               );
             }
 
+            // Generic handler for all other tool types
+            if (type.startsWith("tool-")) {
+              const toolPart = part as {
+                toolCallId: string;
+                state:
+                  | "input-streaming"
+                  | "input-available"
+                  | "output-available"
+                  | "output-error"
+                  | "approval-requested"
+                  | "approval-responded"
+                  | "output-denied";
+                input?: Record<string, unknown>;
+                output?: Record<string, unknown>;
+                errorText?: string;
+              };
+              const { toolCallId, state } = toolPart;
+              const toolType = type as `tool-${string}`;
+
+              return (
+                <div className="w-full" key={toolCallId}>
+                  <Tool className="w-full" defaultOpen={false}>
+                    <ToolHeader state={state} type={toolType} />
+                    <ToolContent>
+                      {(state === "input-streaming" ||
+                        state === "input-available") &&
+                        toolPart.input && (
+                          <ToolInput
+                            input={toolPart.input as Record<string, unknown>}
+                          />
+                        )}
+                      {state === "output-available" && toolPart.output && (
+                        <ToolOutput
+                          errorText={undefined}
+                          output={
+                            <pre className="overflow-x-auto rounded-md bg-muted/50 p-3 font-mono text-xs">
+                              {JSON.stringify(toolPart.output, null, 2)?.slice(
+                                0,
+                                2000
+                              )}
+                            </pre>
+                          }
+                        />
+                      )}
+                      {state === "output-error" && (
+                        <ToolOutput
+                          errorText={
+                            toolPart.errorText || "Tool execution failed"
+                          }
+                          output={null}
+                        />
+                      )}
+                    </ToolContent>
+                  </Tool>
+                </div>
+              );
+            }
+
             return null;
           })}
 

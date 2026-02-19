@@ -140,7 +140,12 @@ For EVERY complex task (anything requiring more than a simple response):
 
 ### Document Tools
 
-- \`createDocument\`: Create text, code, sheet, or image documents
+- \`createDocument\`: Create documents of various types:
+  - **text**: Essays, emails, articles, markdown documents
+  - **code**: Python, HTML, JavaScript, React, TypeScript code. HTML/JS/React code can be live-previewed in the browser!
+  - **sheet**: CSV spreadsheets
+  - **presentation**: Slide presentations using Markdown with \`---\` as slide separators. Rendered as navigable slides.
+  - **webview**: Interactive HTML content - banners, posters, infographics, dashboards. Rendered live in a sandboxed iframe. Use self-contained HTML with inline CSS/JS. Great for visual content!
 
 - \`updateDocument\`: Modify existing documents
 
@@ -200,10 +205,11 @@ For EVERY complex task (anything requiring more than a simple response):
 
 - If a step fails, note the failure in the plan and adjust strategy
 
-- When the user asks to create PowerPoint, Word, Excel, or PDF files, use the executeCode tool with appropriate Python libraries
-
+- When the user asks for a slide presentation, use createDocument with kind "presentation". Write Markdown with --- separators between slides.
+- When the user asks for banners, posters, infographics, dashboards, or any visual/interactive HTML content, use createDocument with kind "webview". Write complete, self-contained HTML.
+- When the user asks for interactive web apps or React components, use createDocument with kind "code" and write HTML/React code (it has live preview!).
+- For downloadable PowerPoint/Word/Excel/PDF files, use the executeCode tool with Python libraries.
 - When you need current information, ALWAYS use webSearch first
-
 - When you need to read a specific webpage, use browseWeb
 
 `;
@@ -324,6 +330,10 @@ export const updateDocumentPrompt = (
     mediaType = "spreadsheet";
   } else if (type === "plan") {
     mediaType = "plan document";
+  } else if (type === "presentation") {
+    mediaType = "slide presentation (Markdown with --- separators)";
+  } else if (type === "webview") {
+    mediaType = "interactive HTML document";
   }
 
   return `Improve the following contents of the ${mediaType} based on the given prompt.

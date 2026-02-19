@@ -5,6 +5,7 @@ import { DocumentSkeleton } from "@/components/document-skeleton";
 import {
   ClockRewind,
   CopyIcon,
+  DownloadIcon,
   MessageIcon,
   PenIcon,
   RedoIcon,
@@ -141,6 +142,26 @@ export const textArtifact = new Artifact<"text", TextArtifactMetadata>({
       onClick: ({ content }) => {
         navigator.clipboard.writeText(content);
         toast.success("Copied to clipboard!");
+      },
+    },
+    {
+      icon: <DownloadIcon size={18} />,
+      label: ".md",
+      description: "Download as Markdown",
+      onClick: async ({ content }) => {
+        const { exportAsMarkdown } = await import("@/lib/export-utils");
+        exportAsMarkdown(content, "document");
+        toast.success("Downloaded as Markdown!");
+      },
+    },
+    {
+      icon: <DownloadIcon size={18} />,
+      label: ".docx",
+      description: "Download as Word document",
+      onClick: async ({ content }) => {
+        const { exportAsDocx } = await import("@/lib/export-utils");
+        await exportAsDocx(content, "document");
+        toast.success("Downloaded as Word document!");
       },
     },
   ],

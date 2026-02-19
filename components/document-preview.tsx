@@ -248,8 +248,12 @@ const DocumentContent = ({ document }: { document: Document }) => {
   const containerClassName = cn(
     "h-[257px] overflow-y-scroll rounded-b-2xl border border-t-0 dark:border-zinc-700 dark:bg-muted",
     {
-      "p-4 sm:px-14 sm:py-16": document.kind === "text",
-      "p-0": document.kind === "code",
+      "p-4 sm:px-14 sm:py-16":
+        document.kind === "text" || document.kind === "plan",
+      "p-0":
+        document.kind === "code" ||
+        document.kind === "webview" ||
+        document.kind === "presentation",
     }
   );
 
@@ -289,6 +293,21 @@ const DocumentContent = ({ document }: { document: Document }) => {
           status={artifact.status}
           title={document.title}
         />
+      ) : document.kind === "presentation" ? (
+        <div className="flex h-full items-center justify-center bg-white p-4 text-center dark:bg-zinc-900">
+          <div className="text-muted-foreground text-xs">
+            Slide Presentation
+          </div>
+        </div>
+      ) : document.kind === "webview" ? (
+        <iframe
+          className="h-full w-full border-0 bg-white"
+          sandbox="allow-scripts"
+          srcDoc={document.content ?? ""}
+          title="Preview"
+        />
+      ) : document.kind === "plan" ? (
+        <Editor {...commonProps} onSaveContent={handleSaveContent} />
       ) : null}
     </div>
   );

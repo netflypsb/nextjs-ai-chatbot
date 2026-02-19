@@ -15,8 +15,10 @@ import { useDebounceCallback, useWindowSize } from "usehooks-ts";
 import { codeArtifact } from "@/artifacts/code/client";
 import { imageArtifact } from "@/artifacts/image/client";
 import { planArtifact } from "@/artifacts/plan/client";
+import { presentationArtifact } from "@/artifacts/presentation/client";
 import { sheetArtifact } from "@/artifacts/sheet/client";
 import { textArtifact } from "@/artifacts/text/client";
+import { webviewArtifact } from "@/artifacts/webview/client";
 import { useArtifact } from "@/hooks/use-artifact";
 import type { Document, Vote } from "@/lib/db/schema";
 import type { Attachment, ChatMessage } from "@/lib/types";
@@ -36,6 +38,8 @@ export const artifactDefinitions = [
   imageArtifact,
   sheetArtifact,
   planArtifact,
+  presentationArtifact,
+  webviewArtifact,
 ];
 export type ArtifactKind = (typeof artifactDefinitions)[number]["kind"];
 

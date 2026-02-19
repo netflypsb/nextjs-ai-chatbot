@@ -62,6 +62,8 @@ export type CustomUIDataTypes = {
   sheetDelta: string;
   codeDelta: string;
   planDelta: string;
+  presentationDelta: string;
+  webviewDelta: string;
   suggestion: Suggestion;
   appendMessage: string;
   id: string;

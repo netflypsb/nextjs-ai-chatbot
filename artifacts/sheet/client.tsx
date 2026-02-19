@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { Artifact } from "@/components/create-artifact";
 import {
   CopyIcon,
+  DownloadIcon,
   LineChartIcon,
   RedoIcon,
   SparklesIcon,
@@ -80,6 +81,16 @@ export const sheetArtifact = new Artifact<"sheet", Metadata>({
 
         navigator.clipboard.writeText(cleanedCsv);
         toast.success("Copied csv to clipboard!");
+      },
+    },
+    {
+      icon: <DownloadIcon size={18} />,
+      label: ".csv",
+      description: "Download as CSV",
+      onClick: async ({ content }) => {
+        const { exportAsCsv } = await import("@/lib/export-utils");
+        exportAsCsv(content, "spreadsheet");
+        toast.success("Downloaded as CSV!");
       },
     },
   ],
