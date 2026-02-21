@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 import { Chat } from "@/components/chat";
 import { DataStreamHandler } from "@/components/data-stream-handler";
-import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
+import { chatModels, DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
 import { auth } from "@/lib/auth";
 import { getChatById, getMessagesByChatId } from "@/lib/db/queries";
 import { convertToUIMessages } from "@/lib/utils";
@@ -49,28 +49,20 @@ async function ChatPage({ params }: { params: Promise<{ id: string }> }) {
   const cookieStore = await cookies();
   const chatModelFromCookie = cookieStore.get("chat-model");
 
-  if (!chatModelFromCookie) {
-    return (
-      <>
-        <Chat
-          autoResume={true}
-          id={chat.id}
-          initialChatModel={DEFAULT_CHAT_MODEL}
-          initialMessages={uiMessages}
-          initialVisibilityType={chat.visibility}
-          isReadonly={session?.user?.id !== chat.userId}
-        />
-        <DataStreamHandler />
-      </>
-    );
-  }
+  // Validate the cookie model ID - if it's not in our valid models list, use default
+  const validModelIds = chatModels.map((m) => m.id);
+  const initialModel =
+    chatModelFromCookie?.value &&
+    validModelIds.includes(chatModelFromCookie.value)
+      ? chatModelFromCookie.value
+      : DEFAULT_CHAT_MODEL;
 
   return (
     <>
       <Chat
         autoResume={true}
         id={chat.id}
-        initialChatModel={chatModelFromCookie.value}
+        initialChatModel={initialModel}
         initialMessages={uiMessages}
         initialVisibilityType={chat.visibility}
         isReadonly={session?.user?.id !== chat.userId}
