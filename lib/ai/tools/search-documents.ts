@@ -1,14 +1,15 @@
 import { tool } from "ai";
 import { z } from "zod";
-import type { Session } from "@/lib/auth";
 import { artifactKinds } from "@/lib/artifacts/server";
+import type { Session } from "@/lib/auth";
 import { searchDocumentsByUser } from "@/lib/db/queries";
 
 type SearchDocumentsProps = {
   session: Session;
+  projectId?: string;
 };
 
-export const searchDocuments = ({ session }: SearchDocumentsProps) =>
+export const searchDocuments = ({ session, projectId }: SearchDocumentsProps) =>
   tool({
     description:
       "Search existing documents by title, content, or kind. Returns matching documents with a content preview.",
@@ -37,6 +38,7 @@ export const searchDocuments = ({ session }: SearchDocumentsProps) =>
         query,
         kind,
         limit,
+        projectId,
       });
 
       return {

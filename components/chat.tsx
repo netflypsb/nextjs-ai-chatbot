@@ -17,9 +17,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useActiveProject } from "@/hooks/use-active-project";
 import { useArtifactSelector } from "@/hooks/use-artifact";
 import { useAutoResume } from "@/hooks/use-auto-resume";
 import { useChatVisibility } from "@/hooks/use-chat-visibility";
+import { useCheckpoints } from "@/hooks/use-checkpoints";
 import { useToolSettings } from "@/hooks/use-tool-settings";
 import type { Vote } from "@/lib/db/schema";
 import { ChatSDKError } from "@/lib/errors";
@@ -57,6 +59,8 @@ export function Chat({
 
   const { mutate } = useSWRConfig();
   const { getActiveTools } = useToolSettings();
+  const { activeProject } = useActiveProject();
+  const { checkpoints, addCheckpoint, restoreToCheckpoint } = useCheckpoints();
 
   // Handle browser back/forward navigation
   useEffect(() => {
@@ -129,6 +133,7 @@ export function Chat({
             selectedChatModel: currentModelIdRef.current,
             selectedVisibilityType: visibilityType,
             selectedTools: getActiveTools(),
+            selectedProjectId: activeProject?.id,
             ...request.body,
           },
         };
@@ -136,6 +141,12 @@ export function Chat({
     }),
     onData: (dataPart) => {
       setDataStream((ds) => (ds ? [...ds, dataPart] : []));
+
+      // Track checkpoint events from server context trimming
+      if (dataPart.type === "data-checkpoint") {
+        // Mark the current last message index as a checkpoint
+        addCheckpoint(messages.length - 1, "context-trim");
+      }
     },
     onFinish: () => {
       mutate(unstable_serialize(getChatHistoryPaginationKey));
@@ -220,9 +231,14 @@ export function Chat({
         <Messages
           addToolApprovalResponse={addToolApprovalResponse}
           chatId={id}
+          checkpoints={checkpoints}
           isArtifactVisible={isArtifactVisible}
           isReadonly={isReadonly}
           messages={messages}
+          onRestoreCheckpoint={(messageIndex) => {
+            const keepCount = restoreToCheckpoint(messageIndex);
+            setMessages(messages.slice(0, keepCount));
+          }}
           regenerate={regenerate}
           selectedModelId={initialChatModel}
           setMessages={setMessages}

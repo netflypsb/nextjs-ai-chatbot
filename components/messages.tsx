@@ -1,8 +1,15 @@
 import type { UseChatHelpers } from "@ai-sdk/react";
 import { ArrowDownIcon } from "lucide-react";
+import { Fragment } from "react";
+import type { CheckpointData } from "@/hooks/use-checkpoints";
 import { useMessages } from "@/hooks/use-messages";
 import type { Vote } from "@/lib/db/schema";
 import type { ChatMessage } from "@/lib/types";
+import {
+  Checkpoint,
+  CheckpointIcon,
+  CheckpointTrigger,
+} from "./ai-elements/checkpoint";
 import { useDataStream } from "./data-stream-provider";
 import { Greeting } from "./greeting";
 import { PreviewMessage, ThinkingMessage } from "./message";
@@ -10,11 +17,13 @@ import { PreviewMessage, ThinkingMessage } from "./message";
 type MessagesProps = {
   addToolApprovalResponse: UseChatHelpers<ChatMessage>["addToolApprovalResponse"];
   chatId: string;
+  checkpoints?: CheckpointData[];
   status: UseChatHelpers<ChatMessage>["status"];
   votes: Vote[] | undefined;
   messages: ChatMessage[];
   setMessages: UseChatHelpers<ChatMessage>["setMessages"];
   regenerate: UseChatHelpers<ChatMessage>["regenerate"];
+  onRestoreCheckpoint?: (messageIndex: number) => void;
   isReadonly: boolean;
   isArtifactVisible: boolean;
   selectedModelId: string;
@@ -23,11 +32,13 @@ type MessagesProps = {
 function PureMessages({
   addToolApprovalResponse,
   chatId,
+  checkpoints,
   status,
   votes,
   messages,
   setMessages,
   regenerate,
+  onRestoreCheckpoint,
   isReadonly,
   selectedModelId: _selectedModelId,
 }: MessagesProps) {
@@ -52,28 +63,51 @@ function PureMessages({
         <div className="mx-auto flex min-w-0 max-w-4xl flex-col gap-4 px-2 py-4 md:gap-6 md:px-4">
           {messages.length === 0 && <Greeting />}
 
-          {messages.map((message, index) => (
-            <PreviewMessage
-              addToolApprovalResponse={addToolApprovalResponse}
-              chatId={chatId}
-              isLoading={
-                status === "streaming" && messages.length - 1 === index
-              }
-              isReadonly={isReadonly}
-              key={message.id}
-              message={message}
-              regenerate={regenerate}
-              requiresScrollPadding={
-                hasSentMessage && index === messages.length - 1
-              }
-              setMessages={setMessages}
-              vote={
-                votes
-                  ? votes.find((vote) => vote.messageId === message.id)
-                  : undefined
-              }
-            />
-          ))}
+          {messages.map((message, index) => {
+            const checkpoint = checkpoints?.find(
+              (cp) => cp.messageIndex === index
+            );
+
+            return (
+              <Fragment key={message.id}>
+                <PreviewMessage
+                  addToolApprovalResponse={addToolApprovalResponse}
+                  chatId={chatId}
+                  isLoading={
+                    status === "streaming" && messages.length - 1 === index
+                  }
+                  isReadonly={isReadonly}
+                  message={message}
+                  regenerate={regenerate}
+                  requiresScrollPadding={
+                    hasSentMessage && index === messages.length - 1
+                  }
+                  setMessages={setMessages}
+                  vote={
+                    votes
+                      ? votes.find((vote) => vote.messageId === message.id)
+                      : undefined
+                  }
+                />
+                {checkpoint && (
+                  <Checkpoint>
+                    <CheckpointIcon />
+                    <CheckpointTrigger
+                      className="text-xs"
+                      onClick={() =>
+                        onRestoreCheckpoint?.(checkpoint.messageIndex)
+                      }
+                      tooltip="Restore conversation to this point"
+                    >
+                      {checkpoint.reason === "context-trim"
+                        ? "Context checkpoint — Restore"
+                        : "Checkpoint — Restore"}
+                    </CheckpointTrigger>
+                  </Checkpoint>
+                )}
+              </Fragment>
+            );
+          })}
 
           {status === "submitted" &&
             !messages.some((msg) =>

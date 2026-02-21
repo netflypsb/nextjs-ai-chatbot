@@ -40,6 +40,7 @@ import {
   getChatById,
   getMessageCountByUserId,
   getMessagesByChatId,
+  getOrCreateDefaultProject,
   saveChat,
   saveMessages,
   updateChatTitleById,
@@ -82,6 +83,7 @@ export async function POST(request: Request) {
       selectedChatModel,
       selectedVisibilityType,
       selectedTools,
+      selectedProjectId,
     } = requestBody;
 
     const session = await auth();
@@ -115,11 +117,25 @@ export async function POST(request: Request) {
         messagesFromDb = await getMessagesByChatId({ id });
       }
     } else if (message?.role === "user") {
+      // Resolve projectId: use selected or default project
+      let projectId = selectedProjectId ?? null;
+      if (!projectId) {
+        try {
+          const defaultProject = await getOrCreateDefaultProject({
+            userId: session.user.id,
+          });
+          projectId = defaultProject.id;
+        } catch (_) {
+          // If project creation fails, proceed without project
+        }
+      }
+
       await saveChat({
         id,
         userId: session.user.id,
         title: "New chat",
         visibility: selectedVisibilityType,
+        projectId,
       });
       titlePromise = generateTitleFromUserMessage({ message });
     }
@@ -203,8 +219,14 @@ export async function POST(request: Request) {
             createDocument: createDocument({ session, dataStream }),
             updateDocument: updateDocument({ session, dataStream }),
             requestSuggestions: requestSuggestions({ session, dataStream }),
-            searchDocuments: searchDocuments({ session }),
-            listDocuments: listDocuments({ session }),
+            searchDocuments: searchDocuments({
+              session,
+              projectId: selectedProjectId,
+            }),
+            listDocuments: listDocuments({
+              session,
+              projectId: selectedProjectId,
+            }),
             readDocument: readDocument({ session }),
             createPlan: createPlan({ session, dataStream }),
             updatePlan: updatePlan({ session, dataStream }),
@@ -220,6 +242,13 @@ export async function POST(request: Request) {
           prepareStep: ({ messages: stepMessages }) => {
             const checkpoint = buildCheckpointMessages(stepMessages);
             if (checkpoint) {
+              dataStream.write({
+                type: "data-checkpoint",
+                data: JSON.stringify({
+                  timestamp: new Date().toISOString(),
+                  trimmedMessages: stepMessages.length - checkpoint.length,
+                }),
+              });
               return { messages: checkpoint };
             }
             return {};

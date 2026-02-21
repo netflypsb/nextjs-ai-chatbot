@@ -77,16 +77,55 @@ export async function ensureUser(clerkId: string, email: string) {
   }
 }
 
+export async function getOrCreateDefaultProject({
+  userId,
+}: {
+  userId: string;
+}) {
+  try {
+    const existing = await db
+      .select()
+      .from(project)
+      .where(
+        and(eq(project.userId, userId), eq(project.name, "Default Project"))
+      );
+
+    if (existing.length > 0) {
+      return existing[0];
+    }
+
+    const now = new Date();
+    const [newProject] = await db
+      .insert(project)
+      .values({
+        userId,
+        name: "Default Project",
+        description: "Default project for chats and artifacts",
+        createdAt: now,
+        updatedAt: now,
+      })
+      .returning();
+    return newProject;
+  } catch (_error) {
+    throw new ChatSDKError(
+      "bad_request:database",
+      "Failed to get or create default project"
+    );
+  }
+}
+
 export async function saveChat({
   id,
   userId,
   title,
   visibility,
+  projectId,
 }: {
   id: string;
   userId: string;
   title: string;
   visibility: VisibilityType;
+  projectId?: string | null;
 }) {
   try {
     return await db.insert(chat).values({
@@ -95,6 +134,7 @@ export async function saveChat({
       userId,
       title,
       visibility,
+      projectId: projectId ?? null,
     });
   } catch (_error) {
     throw new ChatSDKError("bad_request:database", "Failed to save chat");
@@ -417,14 +457,20 @@ export async function searchDocumentsByUser({
   query,
   kind,
   limit = 10,
+  projectId,
 }: {
   userId: string;
   query?: string;
   kind?: string;
   limit?: number;
+  projectId?: string;
 }) {
   try {
     const conditions = [eq(document.userId, userId)];
+
+    if (projectId) {
+      conditions.push(eq(document.projectId, projectId));
+    }
 
     if (kind) {
       conditions.push(eq(document.kind, kind as ArtifactKind));
@@ -482,13 +528,19 @@ export async function getDocumentsByUserId({
   userId,
   kind,
   limit = 20,
+  projectId,
 }: {
   userId: string;
   kind?: string;
   limit?: number;
+  projectId?: string;
 }) {
   try {
     const conditions = [eq(document.userId, userId)];
+
+    if (projectId) {
+      conditions.push(eq(document.projectId, projectId));
+    }
 
     if (kind) {
       conditions.push(eq(document.kind, kind as ArtifactKind));
@@ -687,6 +739,26 @@ export async function createStreamId({
       "bad_request:database",
       "Failed to create stream id"
     );
+  }
+}
+
+export async function getLatestStreamIdByChatId({
+  chatId,
+}: {
+  chatId: string;
+}) {
+  try {
+    const [latest] = await db
+      .select({ id: stream.id })
+      .from(stream)
+      .where(eq(stream.chatId, chatId))
+      .orderBy(desc(stream.createdAt))
+      .limit(1)
+      .execute();
+
+    return latest?.id ?? null;
+  } catch (_error) {
+    return null;
   }
 }
 

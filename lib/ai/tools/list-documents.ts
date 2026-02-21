@@ -1,14 +1,15 @@
 import { tool } from "ai";
 import { z } from "zod";
-import type { Session } from "@/lib/auth";
 import { artifactKinds } from "@/lib/artifacts/server";
+import type { Session } from "@/lib/auth";
 import { getDocumentsByUserId } from "@/lib/db/queries";
 
 type ListDocumentsProps = {
   session: Session;
+  projectId?: string;
 };
 
-export const listDocuments = ({ session }: ListDocumentsProps) =>
+export const listDocuments = ({ session, projectId }: ListDocumentsProps) =>
   tool({
     description:
       "List user's documents with optional filtering by kind. Returns document IDs, titles, kinds, and creation dates.",
@@ -32,6 +33,7 @@ export const listDocuments = ({ session }: ListDocumentsProps) =>
         userId: session.user.id,
         kind,
         limit,
+        projectId,
       });
 
       return {
