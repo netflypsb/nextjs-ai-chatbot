@@ -13,6 +13,12 @@ import { buildCheckpointMessages } from "@/lib/ai/context-manager";
 import { entitlementsByUserType } from "@/lib/ai/entitlements";
 import { type RequestHints, systemPrompt } from "@/lib/ai/prompts";
 import { getLanguageModel } from "@/lib/ai/providers";
+import {
+  agentBrowserClose,
+  agentBrowserExtract,
+  agentBrowserInteract,
+  agentBrowserNavigate,
+} from "@/lib/ai/tools/agent-browser";
 import { browseWeb } from "@/lib/ai/tools/browse-web";
 import { createDocument } from "@/lib/ai/tools/create-document";
 import { createPlan } from "@/lib/ai/tools/create-plan";
@@ -69,8 +75,14 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { id, message, messages, selectedChatModel, selectedVisibilityType } =
-      requestBody;
+    const {
+      id,
+      message,
+      messages,
+      selectedChatModel,
+      selectedVisibilityType,
+      selectedTools,
+    } = requestBody;
 
     const session = await auth();
 
@@ -154,23 +166,31 @@ export async function POST(request: Request) {
           system: systemPrompt({ selectedChatModel, requestHints }),
           messages: modelMessages,
           stopWhen: stepCountIs(50),
-          experimental_activeTools: isReasoningModel
-            ? []
-            : [
-                "getWeather",
-                "createDocument",
-                "updateDocument",
-                "requestSuggestions",
-                "searchDocuments",
-                "listDocuments",
-                "readDocument",
-                "createPlan",
-                "updatePlan",
-                "readPlan",
-                "browseWeb",
-                "webSearch",
-                "executeCode",
-              ],
+          experimental_activeTools: (() => {
+            const allTools = [
+              "getWeather",
+              "createDocument",
+              "updateDocument",
+              "requestSuggestions",
+              "searchDocuments",
+              "listDocuments",
+              "readDocument",
+              "createPlan",
+              "updatePlan",
+              "readPlan",
+              "browseWeb",
+              "webSearch",
+              "executeCode",
+              "agentBrowserNavigate",
+              "agentBrowserInteract",
+              "agentBrowserExtract",
+              "agentBrowserClose",
+            ] as const;
+            if (selectedTools && selectedTools.length > 0) {
+              return allTools.filter((t) => selectedTools.includes(t));
+            }
+            return [...allTools];
+          })(),
           providerOptions: isReasoningModel
             ? {
                 anthropic: {
@@ -192,6 +212,10 @@ export async function POST(request: Request) {
             browseWeb,
             webSearch,
             executeCode,
+            agentBrowserNavigate,
+            agentBrowserInteract,
+            agentBrowserExtract,
+            agentBrowserClose,
           },
           prepareStep: ({ messages: stepMessages }) => {
             const checkpoint = buildCheckpointMessages(stepMessages);

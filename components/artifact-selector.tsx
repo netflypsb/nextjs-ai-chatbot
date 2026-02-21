@@ -1,9 +1,11 @@
 "use client";
 
 import { memo, useMemo, useState } from "react";
+import useSWR from "swr";
+import { useActiveProject } from "@/hooks/use-active-project";
 import { useArtifact } from "@/hooks/use-artifact";
 import type { ChatMessage } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { cn, fetcher } from "@/lib/utils";
 import type { UIArtifact } from "./artifact";
 import { ChevronDownIcon } from "./icons";
 import { Button } from "./ui/button";
@@ -20,6 +22,7 @@ type ArtifactRef = {
   id: string;
   title: string;
   kind: string;
+  source?: "chat" | "project";
 };
 
 function extractArtifactsFromMessages(messages: ChatMessage[]): ArtifactRef[] {
@@ -46,6 +49,7 @@ function extractArtifactsFromMessages(messages: ChatMessage[]): ArtifactRef[] {
             id: output.id,
             title: output.title,
             kind: output.kind || "text",
+            source: "chat",
           });
         }
       }
@@ -65,6 +69,13 @@ const kindLabels: Record<string, string> = {
   webview: "🌐",
 };
 
+type ProjectArtifact = {
+  id: string;
+  title: string;
+  kind: string;
+  createdAt: string;
+};
+
 function PureArtifactSelector({
   messages,
   className,
@@ -75,20 +86,47 @@ function PureArtifactSelector({
 }) {
   const [open, setOpen] = useState(false);
   const { setArtifact } = useArtifact();
+  const { activeProject } = useActiveProject();
 
-  const artifacts = useMemo(
+  const { data: projectArtifacts } = useSWR<ProjectArtifact[]>(
+    activeProject ? `/api/projects/${activeProject.id}/artifacts` : null,
+    fetcher
+  );
+
+  const chatArtifacts = useMemo(
     () => extractArtifactsFromMessages(messages),
     [messages]
   );
 
+  // Merge: chat artifacts first, then project artifacts not already in chat
+  const allArtifacts = useMemo(() => {
+    const merged: ArtifactRef[] = [...chatArtifacts];
+    const chatIds = new Set(chatArtifacts.map((a) => a.id));
+
+    if (projectArtifacts) {
+      for (const pa of projectArtifacts) {
+        if (!chatIds.has(pa.id)) {
+          merged.push({
+            id: pa.id,
+            title: pa.title,
+            kind: pa.kind,
+            source: "project",
+          });
+        }
+      }
+    }
+
+    return merged;
+  }, [chatArtifacts, projectArtifacts]);
+
   const planArtifact = useMemo(
-    () => artifacts.find((a) => a.kind === "plan"),
-    [artifacts]
+    () => allArtifacts.find((a) => a.kind === "plan"),
+    [allArtifacts]
   );
 
   const nonPlanArtifacts = useMemo(
-    () => artifacts.filter((a) => a.kind !== "plan"),
-    [artifacts]
+    () => allArtifacts.filter((a) => a.kind !== "plan"),
+    [allArtifacts]
   );
 
   const openArtifact = (ref: ArtifactRef) => {
@@ -135,6 +173,11 @@ function PureArtifactSelector({
             <path d="M9 21V9" />
           </svg>
           <span className="text-xs">Artifacts</span>
+          {activeProject && (
+            <span className="text-muted-foreground text-[10px]">
+              ({activeProject.name})
+            </span>
+          )}
           <ChevronDownIcon />
         </Button>
       </DropdownMenuTrigger>
@@ -162,7 +205,9 @@ function PureArtifactSelector({
 
         {nonPlanArtifacts.length === 0 ? (
           <div className="px-2 py-3 text-center text-muted-foreground text-xs">
-            No artifacts created yet in this chat.
+            {activeProject
+              ? "No artifacts in this project yet."
+              : "No artifacts created yet in this chat."}
           </div>
         ) : (
           nonPlanArtifacts.map((ref) => (
@@ -176,6 +221,11 @@ function PureArtifactSelector({
               <span className="text-muted-foreground text-xs opacity-60">
                 {ref.kind}
               </span>
+              {ref.source === "project" && (
+                <span className="text-muted-foreground text-[10px] opacity-40">
+                  project
+                </span>
+              )}
             </DropdownMenuItem>
           ))
         )}

@@ -20,6 +20,7 @@ import {
 import { useArtifactSelector } from "@/hooks/use-artifact";
 import { useAutoResume } from "@/hooks/use-auto-resume";
 import { useChatVisibility } from "@/hooks/use-chat-visibility";
+import { useToolSettings } from "@/hooks/use-tool-settings";
 import type { Vote } from "@/lib/db/schema";
 import { ChatSDKError } from "@/lib/errors";
 import type { Attachment, ChatMessage } from "@/lib/types";
@@ -55,6 +56,7 @@ export function Chat({
   });
 
   const { mutate } = useSWRConfig();
+  const { getActiveTools } = useToolSettings();
 
   // Handle browser back/forward navigation
   useEffect(() => {
@@ -126,6 +128,7 @@ export function Chat({
               : { message: lastMessage }),
             selectedChatModel: currentModelIdRef.current,
             selectedVisibilityType: visibilityType,
+            selectedTools: getActiveTools(),
             ...request.body,
           },
         };

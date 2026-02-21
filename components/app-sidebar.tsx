@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useSWRConfig } from "swr";
 import { unstable_serialize } from "swr/infinite";
 import { PlusIcon, TrashIcon } from "@/components/icons";
+import { ProjectSwitcher } from "@/components/project-switcher";
 import {
   getChatHistoryPaginationKey,
   SidebarHistory,
@@ -115,6 +116,11 @@ export function AppSidebar({ user }: { user: User | undefined }) {
               </div>
             </div>
           </SidebarMenu>
+          {user && (
+            <div className="flex items-center gap-1 px-1 pt-1">
+              <ProjectSwitcher />
+            </div>
+          )}
         </SidebarHeader>
         <SidebarContent>
           <SidebarHistory user={user} />

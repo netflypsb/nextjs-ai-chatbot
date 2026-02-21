@@ -17,6 +17,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import type { User } from "@/lib/db/schema";
+import { ToolSettings } from "./tool-settings";
 
 export function SidebarUserNav({ user }: { user: User }) {
   const { signOut } = useClerk();
@@ -57,6 +58,10 @@ export function SidebarUserNav({ user }: { user: User }) {
               }
             >
               {`Toggle ${resolvedTheme === "light" ? "dark" : "light"} mode`}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild onSelect={(e) => e.preventDefault()}>
+              <ToolSettings />
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild data-testid="user-nav-item-auth">

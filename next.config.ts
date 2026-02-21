@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: [
+    "agent-browser",
+    "playwright-core",
+    "@browserbasehq/sdk",
+  ],
   images: {
     remotePatterns: [
       {

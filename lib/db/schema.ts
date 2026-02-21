@@ -18,6 +18,19 @@ export const user = pgTable("User", {
 
 export type User = InferSelectModel<typeof user>;
 
+export const project = pgTable("Project", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  name: text("name").notNull(),
+  description: text("description"),
+  userId: text("userId")
+    .notNull()
+    .references(() => user.id),
+  createdAt: timestamp("createdAt").notNull(),
+  updatedAt: timestamp("updatedAt").notNull(),
+});
+
+export type Project = InferSelectModel<typeof project>;
+
 export const chat = pgTable("Chat", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
   createdAt: timestamp("createdAt").notNull(),
@@ -28,6 +41,7 @@ export const chat = pgTable("Chat", {
   visibility: varchar("visibility", { enum: ["public", "private"] })
     .notNull()
     .default("private"),
+  projectId: uuid("projectId").references(() => project.id),
 });
 
 export type Chat = InferSelectModel<typeof chat>;
@@ -124,6 +138,7 @@ export const document = pgTable(
     userId: text("userId")
       .notNull()
       .references(() => user.id),
+    projectId: uuid("projectId").references(() => project.id),
   },
   (table) => {
     return {

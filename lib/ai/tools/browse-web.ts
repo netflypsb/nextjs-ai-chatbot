@@ -1,10 +1,12 @@
-import Browserbase from "@browserbasehq/sdk";
 import { tool } from "ai";
 import { z } from "zod";
 
-const bb = new Browserbase({
-  apiKey: process.env.BROWSERBASE_API_KEY,
-});
+function getBrowserbaseClient() {
+  const Browserbase = require("@browserbasehq/sdk").default;
+  return new Browserbase({
+    apiKey: process.env.BROWSERBASE_API_KEY,
+  });
+}
 
 export const browseWeb = tool({
   description:
@@ -17,6 +19,7 @@ export const browseWeb = tool({
   }),
   execute: async ({ url }) => {
     try {
+      const bb = getBrowserbaseClient();
       const session = await bb.sessions.create({
         projectId: process.env.BROWSERBASE_PROJECT_ID || "",
       });

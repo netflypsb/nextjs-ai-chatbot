@@ -23,6 +23,8 @@ import {
   type DBMessage,
   document,
   message,
+  type Project,
+  project,
   type Suggestion,
   stream,
   suggestion,
@@ -702,6 +704,188 @@ export async function getStreamIdsByChatId({ chatId }: { chatId: string }) {
     throw new ChatSDKError(
       "bad_request:database",
       "Failed to get stream ids by chat id"
+    );
+  }
+}
+
+// ============ Project queries ============
+
+export async function createProject({
+  userId,
+  name,
+  description,
+}: {
+  userId: string;
+  name: string;
+  description?: string;
+}) {
+  try {
+    const now = new Date();
+    const [newProject] = await db
+      .insert(project)
+      .values({
+        userId,
+        name,
+        description: description ?? null,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .returning();
+    return newProject;
+  } catch (_error) {
+    throw new ChatSDKError("bad_request:database", "Failed to create project");
+  }
+}
+
+export async function getProjectsByUserId({ userId }: { userId: string }) {
+  try {
+    return await db
+      .select()
+      .from(project)
+      .where(eq(project.userId, userId))
+      .orderBy(desc(project.updatedAt));
+  } catch (_error) {
+    throw new ChatSDKError(
+      "bad_request:database",
+      "Failed to get projects by user id"
+    );
+  }
+}
+
+export async function getProjectById({ id }: { id: string }) {
+  try {
+    const [p] = await db.select().from(project).where(eq(project.id, id));
+    return p ?? null;
+  } catch (_error) {
+    throw new ChatSDKError(
+      "bad_request:database",
+      "Failed to get project by id"
+    );
+  }
+}
+
+export async function updateProject({
+  id,
+  name,
+  description,
+}: {
+  id: string;
+  name?: string;
+  description?: string;
+}) {
+  try {
+    const updates: Partial<Project> = { updatedAt: new Date() };
+    if (name !== undefined) {
+      updates.name = name;
+    }
+    if (description !== undefined) {
+      updates.description = description;
+    }
+    const [updated] = await db
+      .update(project)
+      .set(updates)
+      .where(eq(project.id, id))
+      .returning();
+    return updated;
+  } catch (_error) {
+    throw new ChatSDKError("bad_request:database", "Failed to update project");
+  }
+}
+
+export async function deleteProject({ id }: { id: string }) {
+  try {
+    // Unlink chats and documents from this project
+    await db
+      .update(chat)
+      .set({ projectId: null })
+      .where(eq(chat.projectId, id));
+    await db
+      .update(document)
+      .set({ projectId: null })
+      .where(eq(document.projectId, id));
+    const [deleted] = await db
+      .delete(project)
+      .where(eq(project.id, id))
+      .returning();
+    return deleted;
+  } catch (_error) {
+    throw new ChatSDKError("bad_request:database", "Failed to delete project");
+  }
+}
+
+export async function getChatsByProjectId({
+  projectId,
+  limit: lim = 50,
+}: {
+  projectId: string;
+  limit?: number;
+}) {
+  try {
+    return await db
+      .select()
+      .from(chat)
+      .where(eq(chat.projectId, projectId))
+      .orderBy(desc(chat.createdAt))
+      .limit(lim);
+  } catch (_error) {
+    throw new ChatSDKError(
+      "bad_request:database",
+      "Failed to get chats by project id"
+    );
+  }
+}
+
+export async function assignChatToProject({
+  chatId,
+  projectId,
+}: {
+  chatId: string;
+  projectId: string | null;
+}) {
+  try {
+    return await db.update(chat).set({ projectId }).where(eq(chat.id, chatId));
+  } catch (_error) {
+    throw new ChatSDKError(
+      "bad_request:database",
+      "Failed to assign chat to project"
+    );
+  }
+}
+
+export async function getDocumentsByProjectId({
+  projectId,
+  limit: lim = 50,
+}: {
+  projectId: string;
+  limit?: number;
+}) {
+  try {
+    const docs = await db
+      .select({
+        id: document.id,
+        title: document.title,
+        kind: document.kind,
+        createdAt: document.createdAt,
+      })
+      .from(document)
+      .where(eq(document.projectId, projectId))
+      .orderBy(desc(document.createdAt));
+
+    // Deduplicate by id (keep latest version)
+    const seen = new Set<string>();
+    const unique = docs.filter((d) => {
+      if (seen.has(d.id)) {
+        return false;
+      }
+      seen.add(d.id);
+      return true;
+    });
+
+    return unique.slice(0, lim);
+  } catch (_error) {
+    throw new ChatSDKError(
+      "bad_request:database",
+      "Failed to get documents by project id"
     );
   }
 }
