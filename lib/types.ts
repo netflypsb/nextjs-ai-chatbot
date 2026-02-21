@@ -9,11 +9,13 @@ import type { getWeather } from "./ai/tools/get-weather";
 import type { listDocuments } from "./ai/tools/list-documents";
 import type { readDocument } from "./ai/tools/read-document";
 import type { readPlan } from "./ai/tools/read-plan";
+import type { readSkill } from "./ai/tools/read-skill";
 import type { requestSuggestions } from "./ai/tools/request-suggestions";
 import type { searchDocuments } from "./ai/tools/search-documents";
+import type { searchSkills } from "./ai/tools/search-skills";
+import type { searchTools } from "./ai/tools/search-tools";
 import type { updateDocument } from "./ai/tools/update-document";
 import type { updatePlan } from "./ai/tools/update-plan";
-import type { webSearch } from "./ai/tools/web-search";
 import type { Suggestion } from "./db/schema";
 
 export type DataPart = { type: "append-message"; message: string };
@@ -38,7 +40,9 @@ type updatePlanTool = InferUITool<ReturnType<typeof updatePlan>>;
 type readPlanTool = InferUITool<ReturnType<typeof readPlan>>;
 type browseWebTool = InferUITool<typeof browseWeb>;
 type executeCodeTool = InferUITool<typeof executeCode>;
-type webSearchTool = InferUITool<typeof webSearch>;
+type readSkillTool = InferUITool<typeof readSkill>;
+type searchSkillsTool = InferUITool<typeof searchSkills>;
+type searchToolsTool = InferUITool<typeof searchTools>;
 
 export type ChatTools = {
   getWeather: weatherTool;
@@ -53,7 +57,9 @@ export type ChatTools = {
   readPlan: readPlanTool;
   browseWeb: browseWebTool;
   executeCode: executeCodeTool;
-  webSearch: webSearchTool;
+  readSkill: readSkillTool;
+  searchSkills: searchSkillsTool;
+  searchTools: searchToolsTool;
 };
 
 export type CustomUIDataTypes = {

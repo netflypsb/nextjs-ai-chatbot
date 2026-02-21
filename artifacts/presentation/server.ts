@@ -18,34 +18,53 @@ Rules:
 - The first slide should be a title slide with # heading
 - Use ## for slide titles
 - Use bullet points, numbered lists, bold, italic for content
-- Use > for speaker notes (optional)
+- Use > for callout/highlight boxes
 - Keep each slide focused and concise (3-6 bullet points max)
-- Include a mix of content types: text, lists, quotes
+- Include a mix of content types: text, lists, quotes, tables
+- Use images where relevant: ![description](https://url)
 - End with a summary or closing slide
 
+Theme directives (place at top of any slide as HTML comment):
+- <!-- theme: dark --> for dark background
+- <!-- theme: corporate --> for professional look
+- <!-- theme: creative --> for gradient background
+- <!-- theme: minimal --> for clean, simple look
+- <!-- bg: linear-gradient(135deg, #color1, #color2) --> for custom gradient
+- <!-- color: #ffffff --> for custom text color
+
 Example format:
+<!-- theme: creative -->
 # Presentation Title
 ## Subtitle
 
 ---
 
-## Slide 2 Title
-- Point 1
-- Point 2
-- Point 3
+## Agenda
+- Topic 1
+- Topic 2
+- Topic 3
 
 ---
 
-## Slide 3 Title
-1. First item
-2. Second item
+<!-- theme: dark -->
+## Key Metrics
+| Metric | Value | Change |
+|--------|-------|--------|
+| Users | 10K | +25% |
+| Revenue | $1M | +15% |
 
-> Speaker note: mention the key takeaway
+---
+
+## Summary
+- Main takeaway 1
+- Main takeaway 2
+
+> Remember: keep it concise and visual
 
 ---
 
 ## Thank You
-Questions?`,
+### Questions?`,
         experimental_transform: smoothStream({ chunking: "word" }),
         prompt: title,
       });

@@ -15,16 +15,19 @@ import {
 function ToggleSwitch({
   checked,
   onToggle,
+  disabled = false,
 }: {
   checked: boolean;
   onToggle: () => void;
+  disabled?: boolean;
 }) {
   return (
     <button
-      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-        checked ? "bg-primary" : "bg-muted-foreground/30"
-      }`}
-      onClick={onToggle}
+      className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+        disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+      } ${checked ? "bg-primary" : "bg-muted-foreground/30"}`}
+      disabled={disabled}
+      onClick={disabled ? undefined : onToggle}
       type="button"
     >
       <span
@@ -61,13 +64,21 @@ export function ToolSettings() {
               key={cat.id}
             >
               <div className="flex flex-col gap-0.5">
-                <span className="font-medium text-sm">{cat.name}</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-medium text-sm">{cat.name}</span>
+                  {cat.core && (
+                    <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                      Core
+                    </span>
+                  )}
+                </div>
                 <span className="text-muted-foreground text-xs">
                   {cat.description}
                 </span>
               </div>
               <ToggleSwitch
-                checked={categoryEnabled[cat.id] !== false}
+                checked={cat.core || categoryEnabled[cat.id] !== false}
+                disabled={cat.core}
                 onToggle={() => toggleCategory(cat.id)}
               />
             </div>

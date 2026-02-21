@@ -7,6 +7,7 @@ export type ToolCategory = {
   name: string;
   description: string;
   tools: string[];
+  core?: boolean;
 };
 
 export const TOOL_CATEGORIES: ToolCategory[] = [
@@ -20,31 +21,29 @@ export const TOOL_CATEGORIES: ToolCategory[] = [
       "readDocument",
       "listDocuments",
       "searchDocuments",
+      "requestSuggestions",
     ],
+    core: true,
   },
   {
     id: "plans",
     name: "Plan Management",
-    description: "Create, read, and update plans",
+    description: "Create, read, and update plans for multi-step tasks",
     tools: ["createPlan", "updatePlan", "readPlan"],
+    core: true,
   },
   {
-    id: "webSearch",
-    name: "Web Search",
-    description: "Search the internet using Brave Search / DuckDuckGo",
-    tools: ["webSearch"],
-  },
-  {
-    id: "browseWeb",
-    name: "Web Browse (Browserbase)",
-    description: "Browse web pages using Browserbase service",
-    tools: ["browseWeb"],
+    id: "discovery",
+    name: "Discovery (Skills & Tools)",
+    description: "Search and load skills and discover available tools",
+    tools: ["readSkill", "searchSkills", "searchTools"],
+    core: true,
   },
   {
     id: "agentBrowser",
-    name: "Agent Browser (AI Browser)",
+    name: "Agent Browser",
     description:
-      "AI-optimized browser with snapshot/ref system for navigation, interaction, and extraction",
+      "AI-optimized browser with snapshot/ref system for web browsing and interaction",
     tools: [
       "agentBrowserNavigate",
       "agentBrowserInteract",
@@ -53,16 +52,24 @@ export const TOOL_CATEGORIES: ToolCategory[] = [
     ],
   },
   {
+    id: "browseWeb",
+    name: "Browserbase",
+    description:
+      "Browse web pages and extract text content using Browserbase cloud browser",
+    tools: ["browseWeb"],
+  },
+  {
     id: "codeExecution",
     name: "Code Execution",
-    description: "Execute code in a sandboxed environment",
+    description:
+      "Execute Python code in a sandboxed environment with file generation",
     tools: ["executeCode"],
   },
   {
     id: "other",
-    name: "Other Tools",
-    description: "Weather, suggestions, and other utilities",
-    tools: ["getWeather", "requestSuggestions"],
+    name: "Utility",
+    description: "Weather and other utility tools",
+    tools: ["getWeather"],
   },
 ];
 
@@ -116,7 +123,7 @@ export function useToolSettings() {
   const getActiveTools = useCallback((): string[] => {
     const active: string[] = [];
     for (const cat of TOOL_CATEGORIES) {
-      if (categoryEnabled[cat.id] !== false) {
+      if (cat.core || categoryEnabled[cat.id] !== false) {
         active.push(...cat.tools);
       }
     }

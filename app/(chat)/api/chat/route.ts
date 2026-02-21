@@ -27,11 +27,13 @@ import { getWeather } from "@/lib/ai/tools/get-weather";
 import { listDocuments } from "@/lib/ai/tools/list-documents";
 import { readDocument } from "@/lib/ai/tools/read-document";
 import { readPlan } from "@/lib/ai/tools/read-plan";
+import { readSkill } from "@/lib/ai/tools/read-skill";
 import { requestSuggestions } from "@/lib/ai/tools/request-suggestions";
 import { searchDocuments } from "@/lib/ai/tools/search-documents";
+import { searchSkills } from "@/lib/ai/tools/search-skills";
+import { searchTools } from "@/lib/ai/tools/search-tools";
 import { updateDocument } from "@/lib/ai/tools/update-document";
 import { updatePlan } from "@/lib/ai/tools/update-plan";
-import { webSearch } from "@/lib/ai/tools/web-search";
 import { auth, type UserType } from "@/lib/auth";
 import { isProductionEnvironment } from "@/lib/constants";
 import {
@@ -195,12 +197,14 @@ export async function POST(request: Request) {
               "updatePlan",
               "readPlan",
               "browseWeb",
-              "webSearch",
               "executeCode",
               "agentBrowserNavigate",
               "agentBrowserInteract",
               "agentBrowserExtract",
               "agentBrowserClose",
+              "readSkill",
+              "searchSkills",
+              "searchTools",
             ] as const;
             if (selectedTools && selectedTools.length > 0) {
               return allTools.filter((t) => selectedTools.includes(t));
@@ -232,12 +236,14 @@ export async function POST(request: Request) {
             updatePlan: updatePlan({ session, dataStream }),
             readPlan: readPlan({ session }),
             browseWeb,
-            webSearch,
             executeCode,
             agentBrowserNavigate,
             agentBrowserInteract,
             agentBrowserExtract,
             agentBrowserClose,
+            readSkill,
+            searchSkills,
+            searchTools,
           },
           prepareStep: ({ messages: stepMessages }) => {
             const checkpoint = buildCheckpointMessages(stepMessages);
